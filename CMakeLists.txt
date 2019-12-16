@@ -43,9 +43,9 @@ set(LIB_PATH ${CMAKE_SOURCE_DIR}/lib)
 set(DEPEND_PATH ${CMAKE_SOURCE_DIR}/utils)
 
 option(OPTION_BUILD_DEMO "build demo" ON)
-option(OPTION_USE_VCGLIB "use vcglib" ON)
+#option(OPTION_USE_VCGLIB "use vcglib" OFF)
 option(OPTION_BUILD_MT "use mt build" ON)
-#option(OPTION_USE_BATOOLS_AS_DLL "use libBATools as dll" ON)
+option(OPTION_USE_BATOOLS_AS_LIB "use libBATools as static lib" OFF)
 
 # set MD to MT
 if(OPTION_BUILD_MT)
@@ -62,15 +62,12 @@ foreach(CompilerFlags ${CompilerFlags})
 endforeach()
 endif()
 
-# try to find the vcg library
-if(OPTION_VCGLIB)
-set (VCGLIB_INCLUDE_DIR_HINTS ${DEPEND_PATH}/vcglib)
-find_package(vcglib REQUIRED)
-  if (VCGLIB_FOUND)
-    message(STATUS "vcglib found in:")
-    message(STATUS ${VCGLIB_INCLUDE_DIRS})
-    endif (VCGLIB_FOUND)
-endif(OPTION_VCGLIB)
+set(EIGEN_INCLUDE_DIRS $ENV{EIGEN_INCLUDE_DIR})
+set(EIGEN_INCLUDE_DIR $ENV{EIGEN_INCLUDE_DIR})
+find_package(Eigen REQUIRED)
+if (EIGEN_FOUND)
+  message(STATUS "Eigen found in: ${EIGEN_INCLUDE_DIRS}")
+ENDIF (EIGEN_FOUND)
 
 # configure a file
 configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.in

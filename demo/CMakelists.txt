@@ -12,3 +12,7 @@ target_link_libraries(${PROJECT_NAME}	libBATools)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 	${LIB_PATH})
+
+if (OPTION_USE_BATOOLS_AS_LIB)
+	set_property( TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS USE_BATOOLS_AS_LIB)
+endif()

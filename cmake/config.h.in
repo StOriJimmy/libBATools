@@ -1,0 +1,4 @@
+
+
+// Define if the compiler is MSVC
+#cmakedefine MSVC

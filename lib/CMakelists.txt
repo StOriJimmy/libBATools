@@ -1,0 +1,20 @@
+# lib core
+Project(libBATools)
+file (GLOB HEADERS "*.h" "*.hpp")
+file (GLOB SOURCES "*.cpp")
+
+set(SRCS_FILES ${HEADERS} ${SOURCES})
+
+if (OPTION_USE_BATOOLS_AS_DLL)
+	add_library (${PROJECT_NAME} SHARED	${SRCS_FILES})
+	set_property( TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS USE_BATOOLS_AS_DLL)
+else(OPTION_USE_BATOOLS_AS_DLL)
+	add_library (${PROJECT_NAME} STATIC	${SRCS_FILES})
+endif(OPTION_USE_BATOOLS_AS_DLL)
+
+#target_link_libraries(${PROJECT_NAME}	)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+	${LIB_PATH})
+
+install(FILES ${PROJECT_NAME}.h CONFIGURATIONS Release Debug DESTINATION include)

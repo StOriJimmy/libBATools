@@ -47,6 +47,10 @@ option(OPTION_BUILD_DEMO "build demo" ON)
 option(OPTION_BUILD_MT "use mt build" ON)
 option(OPTION_USE_BATOOLS_AS_LIB "use libBATools as static lib" OFF)
 
+if(OPTION_USE_BATOOLS_AS_LIB)
+set(USE_BATOOLS_AS_LIB)
+endif()
+
 # set MD to MT
 if(OPTION_BUILD_MT)
 set(CompilerFlags
@@ -62,8 +66,7 @@ foreach(CompilerFlags ${CompilerFlags})
 endforeach()
 endif()
 
-set(EIGEN_INCLUDE_DIRS $ENV{EIGEN_INCLUDE_DIR})
-set(EIGEN_INCLUDE_DIR $ENV{EIGEN_INCLUDE_DIR})
+set(EIGEN_INCLUDE_DIR $ENV{EIGEN_INCLUDE_DIR} CACHE PATH "eigen directory")
 find_package(Eigen REQUIRED)
 if (EIGEN_FOUND)
   message(STATUS "Eigen found in: ${EIGEN_INCLUDE_DIRS}")
@@ -76,11 +79,11 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.in
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/cmake)
 include_directories(${LIB_PATH})
 
+add_subdirectory(${LIB_PATH})
+
 if(OPTION_BUILD_DEMO)
 add_subdirectory(${DEMO_PATH})
 endif(OPTION_BUILD_DEMO)
-
-add_subdirectory(${LIB_PATH})
 
 INSTALL(TARGETS libBATools
 RUNTIME DESTINATION bin

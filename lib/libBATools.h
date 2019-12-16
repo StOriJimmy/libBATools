@@ -10,6 +10,8 @@
 
   CHANGE HISTORY:
 	16 December 2019 -- created and first commit by Xinyi Liu
+
+===============================================================================
 */
 
 #ifndef __LIB_BATOOLS_H__

@@ -357,7 +357,7 @@ LIBBA_API bool loadBaInfoCVFile(const std::string & file_path, std::vector<BAIma
 
 		//! Intrinsic
 		if (map_index_cam.find(cam_index) == map_index_cam.end()) {
-			std::cout << "invalid camera number" << std::endl;
+			std::cerr << "invalid camera number" << std::endl;
 			return false;
 		}
 		Cam_Intri_Input intri = map_index_cam[cam_index];
@@ -402,7 +402,7 @@ LIBBA_API bool loadBaInfoCVFile(const std::string & file_path, std::vector<BAIma
 	std::swap(image_info_valid, image_infos);
 
 	fin.close();
-	std::cerr << "bundle file loaded from: " << file_path << std::endl;
+	//std::cout << "bundle file loaded from: " << file_path << std::endl;
 	return true;
 }
 
@@ -442,7 +442,7 @@ LIBBA_API bool loadBundleOutFile(const std::string & file_path, std::vector<BAIm
 	std::ifstream ifstr;
 	ifstr.open(file_path.c_str());
 	if (!ifstr.is_open()) {
-		std::cout << "Cannot open file : " << file_path << std::endl;
+		std::cerr << "Cannot open file : " << file_path << std::endl;
 		return false;
 	}
 	std::string lbuf;
@@ -450,7 +450,7 @@ LIBBA_API bool loadBundleOutFile(const std::string & file_path, std::vector<BAIm
 	size_t img_num = 0, point_num = 0;
 	ifstr >> img_num >> point_num;
 	if (img_num != image_infos.size()) {
-		std::cout << "image number does not match the image list!" << file_path << std::endl;
+		std::cerr << "image number does not match the image list!" << file_path << std::endl;
 		return false;
 	}
 	for (auto& _img : image_infos) {

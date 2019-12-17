@@ -43,12 +43,22 @@ set(LIB_PATH ${CMAKE_SOURCE_DIR}/lib)
 set(DEPEND_PATH ${CMAKE_SOURCE_DIR}/utils)
 
 option(OPTION_BUILD_DEMO "build demo" ON)
-#option(OPTION_USE_VCGLIB "use vcglib" OFF)
+option(OPTION_USE_VCGLIB "use vcglib" OFF)
 option(OPTION_BUILD_MT "use mt build" ON)
 option(OPTION_USE_BATOOLS_AS_LIB "use libBATools as static lib" OFF)
 
+if(OPTION_USE_VCGLIB)
+set (VCGLIB_INCLUDE_DIR_HINTS ${DEPEND_PATH}/vcglib)
+set (VCGLIB_INCLUDE_DIR ${VCGLIB_INCLUDE_DIR_HINTS} CACHE PATH "vcglib directory")
+find_package(vcglib REQUIRED)
+if (VCGLIB_FOUND)
+  set(USE_VCGLIB 1)
+  message(STATUS "vcglib found in: ${VCGLIB_INCLUDE_DIRS}")
+endif (VCGLIB_FOUND)
+endif()
+
 if(OPTION_USE_BATOOLS_AS_LIB)
-set(USE_BATOOLS_AS_LIB)
+set(USE_BATOOLS_AS_LIB 1)
 endif()
 
 # set MD to MT

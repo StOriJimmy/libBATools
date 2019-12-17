@@ -80,9 +80,9 @@ baPoint3d BAImageInfo::convertWolrdToCameraCoordinates(const baPoint3d & pt_3d) 
 	baPoint3d p = pt_3d - getViewPoint();
 	auto rot = Extrinsics().rot;
 	baPoint3d cp;
-	cp[0] = rot[0] * p[0];
-	cp[1] = rot[5] * p[1];
-	cp[2] = rot[10] * p[2];
+	cp[0] = rot[0] * p[0] + rot[1] * p[1] + rot[2] * p[2];
+	cp[1] = rot[4] * p[0] + rot[5] * p[1] + rot[6] * p[2];
+	cp[2] = rot[8] * p[0] + rot[9] * p[1] + rot[10] * p[2];
 
 	cp[2] = -cp[2];
 	return cp;
@@ -95,14 +95,15 @@ baPoint3d BAImageInfo::convertCameraToWolrdCoordinates(const baPoint3d & pt_3d) 
 	auto rot = Extrinsics().rot;
 
 	Eigen::Matrix4d mm, mmi;
+	mm.setIdentity();
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
-			mm(i, j) = rot[i << 2 + j];
+			mm(i, j) = rot[i + 4 * j];
 	mmi = mm.inverse();
 	baPoint3d p;
-	p[0] = mmi(0, 0) * cp[0];
-	p[1] = mmi(1, 1) * cp[1];
-	p[2] = mmi(2, 2) * cp[2];
+	p[0] = mmi(0, 0) * cp[0] + mmi(1, 0) * cp[1] + mmi(2, 0) * cp[2];
+	p[1] = mmi(0, 1) * cp[0] + mmi(1, 1) * cp[1] + mmi(2, 1) * cp[2];
+	p[2] = mmi(0, 2) * cp[0] + mmi(1, 2) * cp[1] + mmi(2, 2) * cp[2];
 	p += getViewPoint();
 	return p;
 }
@@ -183,7 +184,7 @@ baPoint2d BAImageInfo::convertWorldToImageCoordinates(const baPoint3d & pt_3d) c
 	baPoint2d uv = Intrinsics().localToViewportPx(p_f);
 
 	///< left bottom to left top
-	uv[1] = Intrinsics().viewportPx[1] - uv[1];
+	uv[1] = height() - uv[1];
 	return uv;
 }
 
@@ -464,6 +465,7 @@ LIBBA_API bool loadBundleOutFile(const std::string & file_path, std::vector<BAIm
 		//cmr_intri.viewportPx = baPoint2i(_img.width, _img.height);
 		cmr_intri.centerPx[0] = (int)((double)cmr_intri.viewportPx[0] / 2.0f);
 		cmr_intri.centerPx[1] = (int)((double)cmr_intri.viewportPx[1] / 2.0f);
+		cmr_intri.pixelSizeMm = baPoint2d(1.f, 1.f);
 
 		auto & rot = _img.Extrinsics().rot;
 		ifstr >> rot[0] >> rot[1] >> rot[2]

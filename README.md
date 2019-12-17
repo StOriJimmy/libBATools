@@ -6,7 +6,7 @@ tools to parse bundle adjustment results
 
 The code is based on the following prerequisites:
 - Eigen (tested on 3.3.4)
-
+- vcglib (optional) [get vcglib](https://github.com/StOriJimmy/vcglib/tree/devel)
 
 ## Compilation
 prerequisites: cmake version >= 3.0

@@ -16,3 +16,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 if (USE_BATOOLS_AS_LIB)
 	set_property( TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS USE_BATOOLS_AS_LIB)
 endif()
+
+if (USE_VCGLIB)
+add_definitions(-DUSE_VCGLIB)
+target_include_directories(${PROJECT_NAME} PUBLIC 
+	${VCGLIB_INCLUDE_DIR})
+endif ()

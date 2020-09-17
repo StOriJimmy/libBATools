@@ -1,3 +1,4 @@
+#pragma once
 #include "libBATools.h"
 #include <algorithm>
 #include <numeric>
@@ -10,7 +11,7 @@ TVec<T, N>::TVec(T const * values) {	std::copy(values, values + N, v); }
 
 template<typename T, int N>
 inline 
-TVec<T, N>::TVec(T const & values) { std::fill(v, v + N, value); }
+TVec<T, N>::TVec(T const & values) { std::fill(v, v + N, values); }
 
 template<typename T, int N>
 inline
@@ -52,6 +53,9 @@ template <typename T, int N>
 inline TVec<T, N>
 TVec<T, N>::operator- (T const& rhs) const { return TVec<T, N>(*this) -= rhs; }
 
+template<typename T, int N>
+inline TVec<T, N> TVec<T, N>::operator-() const { return (*this)*(-1); }
+
 template <typename T, int N>
 inline TVec<T, N>&
 TVec<T, N>::operator/= (T const& rhs) { std::for_each(v, v + N, [=](T & _v) {_v /= rhs; });	return *this; }
@@ -88,30 +92,21 @@ template<typename T, int N>
 inline T
 TVec<T, N>::dot(TVec<T, N> const & other) const { return std::inner_product(v, v + N, *other, T(0)); }
 
-BAImageInfo::Camera::Camera()
-	: focalMm(0.f)
-	, viewportPx(baPoint2i(0, 0))
-	, pixelSizeMm(baPoint2d(0.0, 0.0))
-	, centerPx(baPoint2d(0.0, 0.0))
-	, distorCenterPx(baPoint2d(0.0, 0.0))
-	, tang_distor(baPoint2d(0.0, 0.0))
-{
-	std::fill(*k, *k + 4, 0.0);
+template<typename T, int N>
+inline TVec<T, N>
+TVec<T, N>::mat_dot(TVec<T, N> const & other) const { TVec<T, N> ret;
+int num = sqrt(N);
+for (int i = 0; i < num; i++)
+	for (int j = 0; j < num; j++) {
+		T t = 0.0;
+		for (int k = 0; k < num; k++)
+			t += v[i << 2 + num] * other[num << 2 + j];
+		ret[i << 2 + j] = t;
+	}
+return ret;
 }
 
-BAImageInfo::ReferenceFrame::ReferenceFrame()
-	: tra(0.f, 0.f, 0.f)
-{
-	std::fill(*rot, *rot + 16, 0.f);
-	rot[0] = rot[5] = rot[10] = rot[15] = 1.0f;
-}
-
-BAImageInfo::BAImageInfo()
-{
-}
-
-BAImageInfo::~BAImageInfo()
-{
-}
+template<typename T, int N>
+inline void TVec<T, N>::normalize() const { T n = (*this).dot(*this); if (n > std::numeric_limits<T>::epsilon()) { TVec<T, N>(*this) /= n; } }
 
 LIBBATOOLS_NAMESPACE_END

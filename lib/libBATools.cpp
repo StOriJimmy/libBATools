@@ -1,4 +1,4 @@
-#include "libBATools.h"
+﻿#include "libBATools.h"
 #include "typedefImpl.hpp"
 #include <algorithm>
 #include <iostream>
@@ -9,7 +9,411 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 
+#include <string>
+#include <iomanip>
+
+#include <iostream>
+#ifdef SMART3D_SUPPORT
+#include "tinystr.h"
+#include "tinyxml.h"
+#endif // SMART3D_SUPPORT
+
+
+
+using namespace std;
+using namespace Eigen;
+
 LIBBATOOLS_NAMESPACE_BEGIN
+
+
+#ifdef SMART3D_SUPPORT
+LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& image_infos)
+{
+	//创建一个XML的文档对象。
+	TiXmlDocument *myDocument = new TiXmlDocument(ccXmlName);
+	if (!myDocument->LoadFile()) {
+		return false;
+	}
+
+	//获得xml的头，即声明部分
+	TiXmlDeclaration* decl = myDocument->FirstChild()->ToDeclaration();
+#ifdef _DEBUG
+	cout << "xml文件的版本是:" << decl->Version() << endl;
+	cout << "xml的编码格式是：" << decl->Encoding() << endl;
+#endif // _DEBUG
+
+	//获得根元素
+	TiXmlElement *RootElement = myDocument->RootElement();
+	if (!RootElement) {
+		return false;
+	}
+
+	//输出根元素名称
+
+	//cout << "根元素:" << RootElement->Value() << endl;
+
+	/*
+	for (TiXmlElement *child1 = RootElement->FirstChildElement(); child1; child1 = child1->NextSiblingElement())
+	{
+		//该层 <SpatialReferenceSystems> 和 <Block> 下的 <SRSId> 决定了photo中Center的参考系 
+
+		if (child1->Value() == string("Block"))
+		{
+			//cout << "Succeed to find label Blook" << endl;
+			for (TiXmlElement *child2 = child1->FirstChildElement(); child2; child2 = child2->NextSiblingElement())
+			{
+				if (child2->Value() == string("Photogroups"))
+				{
+					//cout << "Succeed to find label Photogroups" << endl;
+					for (TiXmlElement *child3 = child2->FirstChildElement(); child3; child3 = child3->NextSiblingElement())
+					{
+						if (child3->Value() == string("Photogroup"))
+						{
+							//cout << "Succeed to find label Photogroup" << endl;
+
+							//预定义变量来存储同一个photogroup内所有photo相同的变量（即相机自身的参数）
+							long double focalLengthPixels, principlePoint_x, principlePoint_y, k1, k2, k3, p1, p2, camaraOrientation, skew, pixelRatio;
+							int width(0), height(0);
+							double sensor_size(0.f);
+
+							//一个计算photo个数的计数器
+							int count_photo = 0;
+
+							for (TiXmlElement *child4 = child3->FirstChildElement(); child4; child4 = child4->NextSiblingElement())
+							{
+								//对于该层的<photo>针对各组影像相同的参数  在vector构造完成后以赋值方式循环输入（每个元素对应的成员变量值是重复的）
+								
+								if (child4->Value() == string("ImageDimensions"))
+								{
+									//cout << "Succeed to find label ImageDimensions" << endl;
+									for (TiXmlElement *child5 = child4->FirstChildElement(); child5; child5 = child5->NextSiblingElement())
+									{
+										if (child5->Value() == string("Width")) {
+											width = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+										if (child5->Value() == string("Height")) {
+											height = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+									}
+									continue;
+								}
+
+								if (child4->Value() == string("FocalLengthPixels")) 
+								{
+									focalLengthPixels = std::stold(child4->FirstChild()->Value());
+									continue;
+								}
+								if (child4->Value() == string("FocalLength"))
+								{
+									//cout << "Succeed to find label FocalLengthPixels" << endl;
+									focalLengthPixels = std::stold(child4->FirstChild()->Value());//*6000/23.5;
+									continue;
+								}
+								if (child4->Value() == string("SensorSize")) {
+									sensor_size = std::stod(child4->FirstChild()->Value());
+									continue;
+								}
+
+								if (child4->Value() == string("PrincipalPoint"))
+								{
+									//cout << "Succeed to find label PrincipalPoint" << endl;
+									for (TiXmlElement *child5 = child4->FirstChildElement(); child5; child5 = child5->NextSiblingElement())
+									{
+										if (child5->Value() == string("x")) {
+											principlePoint_x = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+										if (child5->Value() == string("y")) {
+											principlePoint_y = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+									}
+									continue;
+								}
+
+								if (child4->Value() == string("Distortion"))
+								{
+									//cout << "Succeed to find label Distortion" << endl;
+									for (TiXmlElement *child5 = child4->FirstChildElement(); child5; child5 = child5->NextSiblingElement())
+									{
+										if (child5->Value() == string("K1")) {
+											k1 = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+										if (child5->Value() == string("K2")) {
+											k2 = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+										if (child5->Value() == string("K3")) {
+											k3 = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+										if (child5->Value() == string("P1")) {
+											p1 = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+										if (child5->Value() == string("P2")) {
+											p2 = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+									}
+									continue;
+								}
+
+								if (child4->Value() == string("AspectRatio"))
+								{
+									//cout << "Succeed to find label AspectRatio" << endl;
+									pixelRatio = std::stold(child4->FirstChild()->Value());
+									continue;
+								}
+
+								if (child4->Value() == string("Skew"))
+								{
+									//cout << "Succeed to find label Skew" << endl;
+									skew = std::stold(child4->FirstChild()->Value());
+									continue;
+								}
+
+								//在这一层搜集各个image_info类变量的成员变量值后进行push_back  遍历完所有<Photo>得到image_info
+								if (child4->Value() == string("Photo"))
+								{
+									// 补充完影像信息
+									if (count_photo == 0) {
+										if (fabs(sensor_size) > 1e-6) {
+											focalLengthPixels = focalLengthPixels * std::max(width, height) / sensor_size;
+										}
+									}
+
+									//计数器
+									count_photo++;
+									cout << "photo_num:" << count_photo << endl;
+
+									//预定义中间变量存储读取的text文本内容
+									long double omega, phi, kappa, x, y, z;
+									string imagepath;
+									int id;
+									double M_00, M_01, M_02, M_10, M_11, M_12, M_20, M_21, M_22;
+
+									bool rotation = false;
+
+									for (TiXmlElement *child5 = child4->FirstChildElement(); child5; child5 = child5->NextSiblingElement())
+									{
+										if (child5->Value() == string("Id")) {
+											id = std::stold(child5->FirstChild()->Value());
+											continue;
+										}
+
+										if (child5->Value() == string("ImagePath")) {
+											imagepath = child5->FirstChild()->Value();
+											continue;
+										}
+
+										if (child5->Value() == string("Pose")) {
+											for (TiXmlElement *child6 = child5->FirstChildElement(); child6; child6 = child6->NextSiblingElement())
+											{
+												if (child6->Value() == string("Rotation"))
+												{
+													for (TiXmlElement *child7 = child6->FirstChildElement(); child7; child7 = child7->NextSiblingElement())
+													{
+														//case 1
+														if (child7->Value() == string("Omega")) {
+															omega = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("Phi")) {
+															phi = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("Kappa")) {
+															kappa = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+
+														//case 2
+														if (child7->Value() == string("M_00")) {
+															rotation = true;
+															M_00 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("M_01")) {
+															M_01 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("M_02")) {
+															M_02 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("M_10")) {
+															M_10 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("M_11")) {
+															M_11 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("M_12")) {
+															M_12 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("M_20")) {
+															M_20 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("M_21")) {
+															M_21 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("M_22")) {
+															M_22 = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+													}
+													continue;
+												}
+
+												if (child6->Value() == string("Center"))
+												{
+													for (TiXmlElement *child7 = child6->FirstChildElement(); child7; child7 = child7->NextSiblingElement())
+													{
+														if (child7->Value() == string("x")) {
+															x = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("y"))	{
+															y = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+														if (child7->Value() == string("z")) {
+															z = std::stold(child7->FirstChild()->Value());
+															continue;
+														}
+													}
+
+													continue;
+												}
+
+											}
+											continue;
+										}
+									}
+
+									BAImageInfo tempinfo;
+									tempinfo.Extrinsics().center_cam[0] = x;
+									tempinfo.Extrinsics().center_cam[1] = y;
+									tempinfo.Extrinsics().center_cam[2] = z;
+
+									if (!rotation)
+									{
+										//case 1
+// 										tempinfo.Extrinsics().rot_fko[0] = phi;
+// 										tempinfo.Extrinsics().rot_fko[1] = kappa;
+// 										tempinfo.Extrinsics().rot_fko[2] = omega;
+// 
+// 										R(0, 0) = cos(Extrinsics().rot_fko[0])*cos(Extrinsics().rot_fko[1]);
+// 										R(0, 1) = cos(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[1]) + sin(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[0])*cos(Extrinsics().rot_fko[1]);
+// 										R(0, 2) = sin(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[1]) - cos(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[0])*cos(Extrinsics().rot_fko[1]);
+// 										R(1, 0) = -cos(Extrinsics().rot_fko[0])*sin(Extrinsics().rot_fko[1]);
+// 										R(1, 1) = cos(Extrinsics().rot_fko[2])*cos(Extrinsics().rot_fko[1]) - sin(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[0])*sin(Extrinsics().rot_fko[1]);
+// 										R(1, 2) = sin(Extrinsics().rot_fko[2])*cos(Extrinsics().rot_fko[1]) + cos(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[0])*sin(Extrinsics().rot_fko[1]);
+// 										R(2, 0) = sin(Extrinsics().rot_fko[0]);
+// 										R(2, 1) = -sin(Extrinsics().rot_fko[2])*cos(Extrinsics().rot_fko[0]);
+// 										R(2, 2) = cos(Extrinsics().rot_fko[2])*cos(Extrinsics().rot_fko[0]);
+
+										M_00 = cos(phi)*cos(kappa);
+										M_01 = cos(omega)*sin(kappa) + sin(omega)*sin(phi)*cos(kappa);
+										M_02 = sin(omega)*sin(kappa) - cos(omega)*sin(phi)*cos(kappa);
+										M_10 = -cos(phi)*sin(kappa);
+										M_11 = cos(omega)*cos(kappa) - sin(omega)*sin(phi)*sin(kappa);
+										M_12 = sin(omega)*cos(kappa) + cos(omega)*sin(phi)*sin(kappa);
+										M_20 = sin(phi);
+										M_21 = -sin(omega)*cos(phi);
+										M_22 = cos(omega)*cos(phi);
+									}
+									//else
+
+									{
+										//case 2
+										tempinfo.Extrinsics().rot_matirx[0] = M_00;
+										tempinfo.Extrinsics().rot_matirx[1] = M_01;
+										tempinfo.Extrinsics().rot_matirx[2] = M_02;
+										tempinfo.Extrinsics().rot_matirx[3] = M_10;
+										tempinfo.Extrinsics().rot_matirx[4] = M_11;
+										tempinfo.Extrinsics().rot_matirx[5] = M_12;
+										tempinfo.Extrinsics().rot_matirx[6] = M_20;
+										tempinfo.Extrinsics().rot_matirx[7] = M_21;
+										tempinfo.Extrinsics().rot_matirx[8] = M_22;
+									}
+
+									tempinfo.Intrinsics().focal_pix = focalLengthPixels;
+									tempinfo.Intrinsics().priciplepoint_img[0] = principlePoint_x;
+									tempinfo.Intrinsics().priciplepoint_img[1] = principlePoint_y;
+
+									tempinfo.Intrinsics().k_p[0] = k1;
+									tempinfo.Intrinsics().k_p[1] = k2;
+									tempinfo.Intrinsics().k_p[2] = k3;
+									tempinfo.Intrinsics().k_p[3] = p1;
+									tempinfo.Intrinsics().k_p[4] = p2;
+
+									tempinfo.Intrinsics().pixelRatio = pixelRatio;
+									tempinfo.Intrinsics().skew = skew;
+
+									tempinfo.Extrinsics().imagepath = imagepath;
+									tempinfo.Extrinsics().photo_ID = id;
+
+									tempinfo.Intrinsics().width = width;
+									tempinfo.Intrinsics().height = height;
+
+									image_infos.push_back(tempinfo);
+									
+								}
+							}
+							cout << "image_infos size: " << image_infos.size() << endl;
+
+							continue;
+						}
+					}
+					
+					continue;
+				}
+			}
+
+			continue;
+		}
+	}
+	*/
+	cout << "Succeed to load XML into vector image_infos" << endl;
+	return true;
+}
+#endif // SMART3D_SUPPORT
+
+BAImageInfo::Camera::Camera()
+	: focalMm(0.f)
+	, viewportPx(baPoint2i(0, 0))
+	, pixelSizeMm(baPoint2d(0.0, 0.0))
+	, centerPx(baPoint2d(0.0, 0.0))
+	, distorCenterPx(baPoint2d(0.0, 0.0))
+	, tang_distor(baPoint2d(0.0, 0.0))
+{
+	std::fill(*k, *k + 4, 0.0);
+}
+
+BAImageInfo::ReferenceFrame::ReferenceFrame()
+	: tra(0.f, 0.f, 0.f)
+{
+	std::fill(*rot, *rot + 16, 0.f);
+	rot[0] = rot[5] = rot[10] = rot[15] = 1.0f;
+}
+
+BAImageInfo::BAImageInfo()
+{
+}
+
+BAImageInfo::~BAImageInfo()
+{
+}
+
 
 baPoint2d BAImageInfo::Camera::distortedToUndistorted(const baPoint2d & p) const
 {
@@ -328,7 +732,7 @@ LIBBA_API bool loadBaInfoCVFile(const std::string & file_path, std::vector<BAIma
 		map_index_cam[index] = _cam;
 	}
 
-	getline(fin, lbuf);	/// ע������CV����ϵ��
+	getline(fin, lbuf);	/// 注：采用CV畸变系数
 	getline(fin, lbuf);	/// --------------------------------Image Information--------------------------------
 	getline(fin, lbuf);	/// ImageID ImageName Xs Ys Zs Phi Omega Kappa StripID Attrib CameraID bFlag BlockID 
 	getline(fin, lbuf);	/// image sum

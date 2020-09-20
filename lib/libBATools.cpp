@@ -18,33 +18,46 @@
 #include "tinyxml.h"
 #endif // SMART3D_SUPPORT
 
-
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 using namespace std;
-using namespace Eigen;
 
 LIBBATOOLS_NAMESPACE_BEGIN
 
+inline baMatrix44d mat_dot(baMatrix44d a, baMatrix44d b) {
+	baMatrix44d ret;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			double t = 0.0;
+			for (int k = 0; k < 4; k++) {
+				t += a[i * 4 + k] * b[k * 4 + j];
+			}
+			ret[i * 4 + j] = t;
+		}
+	}
+		
+	return ret;
+}
 
-#ifdef SMART3D_SUPPORT
 LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& image_infos)
 {
+#ifdef SMART3D_SUPPORT
 	//创建一个XML的文档对象。
 	TiXmlDocument *myDocument = new TiXmlDocument(ccXmlName);
 	if (!myDocument->LoadFile()) {
+		std::cerr << "cannot load file " << ccXmlName << std::endl;
 		return false;
 	}
 
 	//获得xml的头，即声明部分
 	TiXmlDeclaration* decl = myDocument->FirstChild()->ToDeclaration();
-#ifdef _DEBUG
-	cout << "xml文件的版本是:" << decl->Version() << endl;
-	cout << "xml的编码格式是：" << decl->Encoding() << endl;
-#endif // _DEBUG
 
 	//获得根元素
 	TiXmlElement *RootElement = myDocument->RootElement();
-	if (!RootElement) {
+	if (!decl || !RootElement) {
+		std::cerr << "cannot access root element" << std::endl;
 		return false;
 	}
 
@@ -52,7 +65,7 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 
 	//cout << "根元素:" << RootElement->Value() << endl;
 
-	/*
+	
 	for (TiXmlElement *child1 = RootElement->FirstChildElement(); child1; child1 = child1->NextSiblingElement())
 	{
 		//该层 <SpatialReferenceSystems> 和 <Block> 下的 <SRSId> 决定了photo中Center的参考系 
@@ -75,14 +88,10 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 							long double focalLengthPixels, principlePoint_x, principlePoint_y, k1, k2, k3, p1, p2, camaraOrientation, skew, pixelRatio;
 							int width(0), height(0);
 							double sensor_size(0.f);
-
-							//一个计算photo个数的计数器
-							int count_photo = 0;
+							std::string camera_orientation = "XRightYDown";
 
 							for (TiXmlElement *child4 = child3->FirstChildElement(); child4; child4 = child4->NextSiblingElement())
 							{
-								//对于该层的<photo>针对各组影像相同的参数  在vector构造完成后以赋值方式循环输入（每个元素对应的成员变量值是重复的）
-								
 								if (child4->Value() == string("ImageDimensions"))
 								{
 									//cout << "Succeed to find label ImageDimensions" << endl;
@@ -100,7 +109,7 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 									continue;
 								}
 
-								if (child4->Value() == string("FocalLengthPixels")) 
+								if (child4->Value() == string("FocalLengthPixels"))
 								{
 									focalLengthPixels = std::stold(child4->FirstChild()->Value());
 									continue;
@@ -108,11 +117,16 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 								if (child4->Value() == string("FocalLength"))
 								{
 									//cout << "Succeed to find label FocalLengthPixels" << endl;
-									focalLengthPixels = std::stold(child4->FirstChild()->Value());//*6000/23.5;
+									focalLengthPixels = std::stold(child4->FirstChild()->Value())/**6000/23.5*/;
 									continue;
 								}
 								if (child4->Value() == string("SensorSize")) {
 									sensor_size = std::stod(child4->FirstChild()->Value());
+									continue;
+								}
+
+								if (child4->Value() == string("CameraOrientation")) {
+									camera_orientation = child4->FirstChild()->Value();
 									continue;
 								}
 
@@ -176,22 +190,19 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 									continue;
 								}
 
-								//在这一层搜集各个image_info类变量的成员变量值后进行push_back  遍历完所有<Photo>得到image_info
 								if (child4->Value() == string("Photo"))
 								{
+									libba::BAImageInfo image_info;
+
 									// 补充完影像信息
-									if (count_photo == 0) {
+									if (image_infos.empty()) {
 										if (fabs(sensor_size) > 1e-6) {
 											focalLengthPixels = focalLengthPixels * std::max(width, height) / sensor_size;
 										}
 									}
 
-									//计数器
-									count_photo++;
-									cout << "photo_num:" << count_photo << endl;
-
 									//预定义中间变量存储读取的text文本内容
-									long double omega, phi, kappa, x, y, z;
+									long double omega, phi, kappa, cam_x, cam_y, cam_z;
 									string imagepath;
 									int id;
 									double M_00, M_01, M_02, M_10, M_11, M_12, M_20, M_21, M_22;
@@ -278,15 +289,15 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 													for (TiXmlElement *child7 = child6->FirstChildElement(); child7; child7 = child7->NextSiblingElement())
 													{
 														if (child7->Value() == string("x")) {
-															x = std::stold(child7->FirstChild()->Value());
+															cam_x = std::stold(child7->FirstChild()->Value());
 															continue;
 														}
-														if (child7->Value() == string("y"))	{
-															y = std::stold(child7->FirstChild()->Value());
+														if (child7->Value() == string("y")) {
+															cam_y = std::stold(child7->FirstChild()->Value());
 															continue;
 														}
 														if (child7->Value() == string("z")) {
-															z = std::stold(child7->FirstChild()->Value());
+															cam_z = std::stold(child7->FirstChild()->Value());
 															continue;
 														}
 													}
@@ -299,76 +310,141 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 										}
 									}
 
-									BAImageInfo tempinfo;
-									tempinfo.Extrinsics().center_cam[0] = x;
-									tempinfo.Extrinsics().center_cam[1] = y;
-									tempinfo.Extrinsics().center_cam[2] = z;
-
 									if (!rotation)
 									{
 										//case 1
-// 										tempinfo.Extrinsics().rot_fko[0] = phi;
-// 										tempinfo.Extrinsics().rot_fko[1] = kappa;
-// 										tempinfo.Extrinsics().rot_fko[2] = omega;
-// 
-// 										R(0, 0) = cos(Extrinsics().rot_fko[0])*cos(Extrinsics().rot_fko[1]);
-// 										R(0, 1) = cos(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[1]) + sin(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[0])*cos(Extrinsics().rot_fko[1]);
-// 										R(0, 2) = sin(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[1]) - cos(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[0])*cos(Extrinsics().rot_fko[1]);
-// 										R(1, 0) = -cos(Extrinsics().rot_fko[0])*sin(Extrinsics().rot_fko[1]);
-// 										R(1, 1) = cos(Extrinsics().rot_fko[2])*cos(Extrinsics().rot_fko[1]) - sin(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[0])*sin(Extrinsics().rot_fko[1]);
-// 										R(1, 2) = sin(Extrinsics().rot_fko[2])*cos(Extrinsics().rot_fko[1]) + cos(Extrinsics().rot_fko[2])*sin(Extrinsics().rot_fko[0])*sin(Extrinsics().rot_fko[1]);
-// 										R(2, 0) = sin(Extrinsics().rot_fko[0]);
-// 										R(2, 1) = -sin(Extrinsics().rot_fko[2])*cos(Extrinsics().rot_fko[0]);
-// 										R(2, 2) = cos(Extrinsics().rot_fko[2])*cos(Extrinsics().rot_fko[0]);
+										phi = phi * M_PI / 180;
+										kappa = kappa * M_PI / 180;
+										omega = omega * M_PI / 180;
 
 										M_00 = cos(phi)*cos(kappa);
 										M_01 = cos(omega)*sin(kappa) + sin(omega)*sin(phi)*cos(kappa);
 										M_02 = sin(omega)*sin(kappa) - cos(omega)*sin(phi)*cos(kappa);
+
 										M_10 = -cos(phi)*sin(kappa);
 										M_11 = cos(omega)*cos(kappa) - sin(omega)*sin(phi)*sin(kappa);
 										M_12 = sin(omega)*cos(kappa) + cos(omega)*sin(phi)*sin(kappa);
+
 										M_20 = sin(phi);
 										M_21 = -sin(omega)*cos(phi);
 										M_22 = cos(omega)*cos(phi);
 									}
-									//else
 
 									{
-										//case 2
-										tempinfo.Extrinsics().rot_matirx[0] = M_00;
-										tempinfo.Extrinsics().rot_matirx[1] = M_01;
-										tempinfo.Extrinsics().rot_matirx[2] = M_02;
-										tempinfo.Extrinsics().rot_matirx[3] = M_10;
-										tempinfo.Extrinsics().rot_matirx[4] = M_11;
-										tempinfo.Extrinsics().rot_matirx[5] = M_12;
-										tempinfo.Extrinsics().rot_matirx[6] = M_20;
-										tempinfo.Extrinsics().rot_matirx[7] = M_21;
-										tempinfo.Extrinsics().rot_matirx[8] = M_22;
+										auto & img_extri = image_info.Extrinsics();
+										auto & rot = img_extri.rot;
+
+										//! Extrinsic
+										libba::baPoint3d a, b, c; // 列
+										a = { M_00, M_10, M_20 };
+										b = { M_01, M_11, M_21 };
+										c = { M_02, M_12, M_22 };
+
+										libba::baMatrix44d rot_temp;
+										{
+											rot_temp[0] = M_00;
+											rot_temp[1] = M_01;
+											rot_temp[2] = M_02;
+											rot_temp[3] = 0.0;
+											rot_temp[4] = M_10;
+											rot_temp[5] = M_11;
+											rot_temp[6] = M_12;
+											rot_temp[7] = 0.0;
+											rot_temp[8] = M_20;
+											rot_temp[9] = M_21;
+											rot_temp[10] = M_22;
+											rot_temp[11] = 0.0;
+											rot_temp[12] = 0.0;
+											rot_temp[13] = 0.0;
+											rot_temp[14] = 0.0;
+											rot_temp[15] = 1.0;
+										}
+
+										libba::baMatrix44d CameraOrientation;
+										for (size_t i = 0; i < 16; i++) {
+											CameraOrientation[i] = 0.0;
+										}
+										CameraOrientation[15] = 1.0f;
+
+										{
+											if (camera_orientation == "XRightYDown") {
+												CameraOrientation[0] = CameraOrientation[5] = CameraOrientation[10] = 1.0;
+											}
+											else if (camera_orientation == "XLeftYDown") {
+												CameraOrientation[0] = -1;
+												CameraOrientation[5] = 1;
+												CameraOrientation[10] = -1;
+											}
+											else if (camera_orientation == "XLeftYUp") {
+												CameraOrientation[0] = -1;
+												CameraOrientation[5] = -1;
+												CameraOrientation[10] = 1;
+											}
+											else if (camera_orientation == "XRightYUp") {
+												CameraOrientation[0] = 1;
+												CameraOrientation[5] = -1;
+												CameraOrientation[10] = -1;
+											}
+											else if (camera_orientation == "XDownYRight") {
+												CameraOrientation[1] = 1;
+												CameraOrientation[4] = 1;
+												CameraOrientation[10] = -1;
+											}
+											else if (camera_orientation == "XDownYLeft") {
+												CameraOrientation[1] = -1;
+												CameraOrientation[4] = 1;
+												CameraOrientation[10] = 1;
+											}
+											else if (camera_orientation == "XUpYLeft") {
+												CameraOrientation[1] = -1;
+												CameraOrientation[4] = -1;
+												CameraOrientation[10] = -1;
+											}
+											else if (camera_orientation == "XUpYRight") {
+												CameraOrientation[1] = 1;
+												CameraOrientation[4] = -1;
+												CameraOrientation[10] = 1;
+											}
+										}
+										
+										// 转成 XRightYUp
+										baMatrix44d XRightYUp(0.0);
+										XRightYUp[0] = 1; XRightYUp[5] = -1; XRightYUp[10] = -1; XRightYUp[15] = 1;
+
+										baMatrix44d coef = mat_dot(XRightYUp, CameraOrientation);
+										rot = mat_dot(coef, rot_temp);
+
+										img_extri.tra = libba::baPoint3d(cam_x, cam_y, cam_z);
+
+										// 内方位元素
+										auto& cam_intri = image_info.Intrinsics();
+										cam_intri.centerPx = libba::baPoint2d(principlePoint_x, height - principlePoint_y);
+										cam_intri.focalMm = focalLengthPixels;
+										//double pixel_size = ((sensor_size < 1e-6) ? 20.0f : sensor_size) / std::max(width, height);
+										cam_intri.pixelSizeMm = libba::baPoint2d(1.0, 1.0);// libba::baPoint2d(pixel_size, pixel_size * pixelRatio);
+										cam_intri.k[0] = k1;
+										cam_intri.k[1] = k2;
+										cam_intri.k[2] = k3;
+										cam_intri.tang_distor[0] = p1;
+										cam_intri.tang_distor[1] = p2;
+
+										image_info.width() = width;
+										image_info.height() = height;
+										image_info.m_path = imagepath;
+										{
+											char drive[_MAX_DRIVE];
+											char dir[_MAX_DIR];
+											char name[_MAX_FNAME];
+											char ext[_MAX_EXT];
+											_splitpath(imagepath.c_str(), drive, dir, name, ext);
+											image_info.m_name = name;
+										}
 									}
 
-									tempinfo.Intrinsics().focal_pix = focalLengthPixels;
-									tempinfo.Intrinsics().priciplepoint_img[0] = principlePoint_x;
-									tempinfo.Intrinsics().priciplepoint_img[1] = principlePoint_y;
 
-									tempinfo.Intrinsics().k_p[0] = k1;
-									tempinfo.Intrinsics().k_p[1] = k2;
-									tempinfo.Intrinsics().k_p[2] = k3;
-									tempinfo.Intrinsics().k_p[3] = p1;
-									tempinfo.Intrinsics().k_p[4] = p2;
-
-									tempinfo.Intrinsics().pixelRatio = pixelRatio;
-									tempinfo.Intrinsics().skew = skew;
-
-									tempinfo.Extrinsics().imagepath = imagepath;
-									tempinfo.Extrinsics().photo_ID = id;
-
-									tempinfo.Intrinsics().width = width;
-									tempinfo.Intrinsics().height = height;
-
-									image_infos.push_back(tempinfo);
-									
-								}
-							}
+									image_infos.push_back(image_info);
+								}							
+}
 							cout << "image_infos size: " << image_infos.size() << endl;
 
 							continue;
@@ -382,11 +458,14 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 			continue;
 		}
 	}
-	*/
+	
 	cout << "Succeed to load XML into vector image_infos" << endl;
+#else
+	std::cerr << "smart3d not supported" << std::endl;
+#endif // SMART3D_SUPPORT
 	return true;
 }
-#endif // SMART3D_SUPPORT
+
 
 BAImageInfo::Camera::Camera()
 	: focalMm(0.f)

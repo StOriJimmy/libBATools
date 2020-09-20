@@ -93,20 +93,6 @@ inline T
 TVec<T, N>::dot(TVec<T, N> const & other) const { return std::inner_product(v, v + N, *other, T(0)); }
 
 template<typename T, int N>
-inline TVec<T, N>
-TVec<T, N>::mat_dot(TVec<T, N> const & other) const { TVec<T, N> ret;
-int num = sqrt(N);
-for (int i = 0; i < num; i++)
-	for (int j = 0; j < num; j++) {
-		T t = 0.0;
-		for (int k = 0; k < num; k++)
-			t += v[i << 2 + num] * other[num << 2 + j];
-		ret[i << 2 + j] = t;
-	}
-return ret;
-}
-
-template<typename T, int N>
 inline void TVec<T, N>::normalize() const { T n = (*this).dot(*this); if (n > std::numeric_limits<T>::epsilon()) { TVec<T, N>(*this) /= n; } }
 
 LIBBATOOLS_NAMESPACE_END

@@ -7,7 +7,6 @@
 #include <tchar.h>
 #include <iostream>
 #include <string>
-#include "typedefImpl.hpp"
 
 #ifdef SMART3D_SUPPORT
 #include "tinystr.h"
@@ -16,8 +15,8 @@
 using namespace std;
 
 
-#define TEST_SMART3D 0
-#define TEST_IMAGE_RETRIEVAL 1
+#define TEST_SMART3D 1
+#define TEST_IMAGE_RETRIEVAL 0
 
 
 #ifdef USE_VCGLIB
@@ -65,7 +64,7 @@ bool testBackProjection(const libba::BAImageInfo & image, const libba::baPoint2d
 
 
 constexpr double DEG_TO_RAD = (M_PI / 180.0);
-
+#if 0
 libba::BAImageInfo DBToImageInfo(
 	double longitude, double latitude, double height, double phi, double omega, double kappa, // 外方位元素
 	double pwidth, double pheight, // 影像宽、长
@@ -104,8 +103,26 @@ libba::BAImageInfo DBToImageInfo(
 	b = { M_01, M_11, M_21 };
 	c = { M_02, M_12, M_22 };
 
+	libba::baMatrix44d rot_temp;
+	rot_temp[0] = M_00;
+	rot_temp[1] = M_01;
+	rot_temp[2] = M_02;
+	rot_temp[3] = 0.0;
+	rot_temp[4] = M_10;
+	rot_temp[5] = M_11;
+	rot_temp[6] = M_12;
+	rot_temp[7] = 0.0;
+	rot_temp[8] = M_20;
+	rot_temp[9] = M_21;
+	rot_temp[10] = M_22;
+	rot_temp[11] = 0.0;
+	rot_temp[12] = 0.0;
+	rot_temp[13] = 0.0;
+	rot_temp[14] = 0.0;
+	rot_temp[15] = 1.0;
+
 	// CameraOrientation 
-	libba::TVec<double, 16> CameraOrientation(0.0);
+	baMatrix44d CameraOrientation(0.0);
 	CameraOrientation[15] = 1.0f;
 
 	if (cameraorie == "XRightYDown") {
@@ -148,10 +165,10 @@ libba::BAImageInfo DBToImageInfo(
 	}
 	
 	// 转成 XRightYUp
-	libba::TVec<double, 16> XRightYUp(0.0);
+	baMatrix44d XRightYUp(0.0);
 	XRightYUp[0] = 1; XRightYUp[5] = -1; XRightYUp[10] = -1; XRightYUp[15] = 1;
 
-	rot = XRightYUp.mat_dot(CameraOrientation).mat_dot(rot);
+	rot = XRightYUp.mat_dot(CameraOrientation).mat_dot(rot_temp);
 
 	img_extri.tra = libba::baPoint3d(longitude, latitude, height);
 
@@ -172,9 +189,11 @@ libba::BAImageInfo DBToImageInfo(
 	
 	return image_info;
 }	
+#endif
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+#if 0
 	//////////////////////////////////////////////////////////////////////////
 	//! 输入参数
 	libba::baPoint3d view_point; // 视点/人眼
@@ -186,7 +205,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	view_upDir.normalize();
 	view_dir.normalize();
-		
+
 	//////////////////////////////////////////////////////////////////////////
 	//! 查找最优影像
 	double min_angle(FLT_MAX);
@@ -252,7 +271,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		!best_image.isInImage(img_corner_4)) {
 		// 仅输出部分，或者这一步需要在找best_image时判断
 	}
-
+#endif
 	// 双线性内插
 
 	// 输出影像
@@ -266,8 +285,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	const char * cXmlName = "Block_AT_withouttiepoints.xml";
-	const char * cXmlName2 = "CCXFJ01export.xml";
+	if (argc < 2) {
+		std::cerr << "please input the smart3d xml path" << std::endl;
+		return 1;
+	}
 	
 	//loadSmart3dXML函数测试
 	std::vector<libba::BAImageInfo> image_data;
@@ -276,58 +297,20 @@ int _tmain(int argc, _TCHAR* argv[])
 		std::cerr << "failed to load image bundle files" << std::endl;
 		return EXIT_FAILURE;
 	}
-
-	/*for (int i = 0; i < image_data.size(); i++)
-	{
-		cout << image_data[i].Extrinsics().imagepath << endl;
-		cout << image_data.size() << endl;
-	}*/
-
-	int count = 0;
+	
 	for (int i = 0; i < image_data.size(); i++)
 	{
-		
-		/*cout << image_data[i].Extrinsics().photo_ID << endl;
-		cout << image_data[i].Extrinsics().imagepath << endl;
-		cout << image_data[i].Extrinsics().center_cam[0] << "  " << image_data[i].Extrinsics().center_cam[1] << "  " << image_data[i].Extrinsics().center_cam[2] << endl;
-		*/
-		if (image_data[i].Extrinsics().photo_ID == 139) {
-			int test = 1;
-		}
-		/*if (image_data[i].Extrinsics().photo_ID == 139)
-		{
-			image_point = image_data[i].convertWorldToImageCoordinates_test(libba::baPoint3d(340048.9425284779, 4295006.2696251385, 73.59));
-			
-			cout << image_data[i].Extrinsics().photo_ID << endl;
-			cout << image_data[i].Extrinsics().imagepath << endl;
-			cout << image_data[i].Intrinsics().width << "  " << image_data[i].Intrinsics().height << endl;
-			cout << (int)image_point[0] << "  " << (int)image_point[1] << endl;
-			
-		}*/
+		libba::BAImageInfo image_info = image_data[i];
+		if (image_data[i].m_name == "DJI_0271") {
+			libba::baPoint2d image_point = image_info.convertWorldToImageCoordinates(libba::baPoint3d(113.4892,-28.9156,44.1243));
 
-		libba::baPoint2d image_point = image_data[i].convertWorldToImageCoordinates_xml/*(libba::baPoint3d(11.60, -55.66, 43.29));*/(libba::baPoint3d(448595.17, 4856971.02, 213.89));
-		if ((image_point[0] >= 0) && (image_point[0] <= image_data[i].Intrinsics().width) && 
-			(image_point[1] >= 0) && (image_point[1] <= image_data[i].Intrinsics().height))
-		{
-			cout << image_data[i].Extrinsics().photo_ID << endl;
-			cout << image_data[i].Extrinsics().imagepath << endl;
-			cout << image_data[i].Intrinsics().width << "  " << image_data[i].Intrinsics().height << endl;
-			cout << (int)image_point[0] << "  " << (int)image_point[1] << endl;
-			cout << image_data[i].Extrinsics().center_cam[0] << "  " << image_data[i].Extrinsics().center_cam[1] << "  " << image_data[i].Extrinsics().center_cam[2] << endl;
-			cout << image_data[i].Extrinsics().rot_matirx[0] << image_data[i].Extrinsics().rot_matirx[1] << image_data[i].Extrinsics().rot_matirx[8] << endl << endl;
+			if (image_info.isInImage(image_point)) {
+				std::cout << "point in image!" << std::endl;
+			}
 		}
-		
 	}
 
-	
-
-	return 0;
-
-
-
-
-
-
+	return EXIT_SUCCESS;
 
 
 //	if (argc < 3) {

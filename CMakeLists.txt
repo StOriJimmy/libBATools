@@ -46,6 +46,7 @@ option(OPTION_BUILD_DEMO "build demo" ON)
 option(OPTION_USE_VCGLIB "use vcglib" OFF)
 option(OPTION_BUILD_MT "use mt build" ON)
 option(OPTION_USE_BATOOLS_AS_LIB "use libBATools as static lib" OFF)
+option(OPTION_SMART3D_SUPPORT "support smart3d xml result" OFF)
 
 if(OPTION_USE_VCGLIB)
 set (VCGLIB_INCLUDE_DIR_HINTS ${DEPEND_PATH}/vcglib)

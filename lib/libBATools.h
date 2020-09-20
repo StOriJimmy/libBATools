@@ -18,6 +18,7 @@
 #define __LIB_BATOOLS_H__
 
 #include <vector>
+#include <string>
 
 #ifndef LIBBATOOLS_NAMESPACE_BEGIN
 #define LIBBATOOLS_NAMESPACE_BEGIN namespace libba {
@@ -72,7 +73,6 @@ public:
 	TVec<T, N>	operator+ (TVec<T, N> const& rhs) const;
 	
 	T dot(TVec<T, N> const& other) const;
-	TVec<T, N> mat_dot(TVec<T, N> const& other) const;
 	void normalize() const;
 protected:
 	T v[N];
@@ -80,11 +80,16 @@ protected:
 
 #endif // _TVEC
 
+template class __declspec(dllexport) TVec<int, 2>;
+template class __declspec(dllexport) TVec<double, 2>;
+template class __declspec(dllexport) TVec<double, 3>;
+
 typedef TVec<int, 2>	baPoint2i;
 typedef TVec<double, 2> baPoint2d;
 typedef TVec<double, 3> baPoint3d;
+typedef TVec<double, 16> baMatrix44d;
 
-inline libba::baPoint3d cross_p3(libba::baPoint3d a, libba::baPoint3d b) {
+LIBBA_API inline libba::baPoint3d cross_p3(libba::baPoint3d a, libba::baPoint3d b) {
 	return { a[1] * b[2] - a[2] * b[1],a[2] * b[0] - a[0] * b[2],a[0] * b[1] - a[1] * b[0] };
 }
 
@@ -127,7 +132,7 @@ public:
 			8 9 10 11
 			12 13 14 15
 		*/
-		TVec<double, 16> rot;
+		baMatrix44d rot;
 	};
 
 	typedef Camera			CameraIntr;
@@ -193,11 +198,9 @@ LIBBA_API bool loadBundleOutFile(const std::string & file_path, std::vector<BAIm
 //! load bundle.out + imagelist.txt
 LIBBA_API bool loadBundleOutFiles(const std::string & image_list, const std::string & sfm_out, std::vector<BAImageInfo> & image_infos);
 
-#ifdef SMART3D_SUPPORT
 ////////////////////////////   func for smart3d   /////////////////////////////////
-//! load xml, given image_infos loaded from imagelist
+//! load xml, GET image_infos loaded from imagelist
 LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& image_infos);
-#endif
 
 LIBBATOOLS_NAMESPACE_END
 #endif // !__LIB_BATOOLS_H__

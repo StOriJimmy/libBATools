@@ -18,6 +18,7 @@
 #define __LIB_BATOOLS_H__
 
 #include <vector>
+#include <string>
 
 #ifndef LIBBATOOLS_NAMESPACE_BEGIN
 #define LIBBATOOLS_NAMESPACE_BEGIN namespace libba {
@@ -60,6 +61,7 @@ public:
 	TVec<T, N>	operator+ (T const & rhs) const;
 	TVec<T, N>& operator-= (T const & rhs);
 	TVec<T, N>	operator- (T const & rhs) const;
+	TVec<T, N>	operator- () const;
 	TVec<T, N>& operator/= (T const & rhs);
 	TVec<T, N>	operator/ (T const & rhs) const;
 	TVec<T, N>& operator*= (T const & rhs);
@@ -69,17 +71,27 @@ public:
 	TVec<T, N>	operator- (TVec<T, N> const& rhs) const;
 	TVec<T, N>& operator+= (TVec<T, N> const& rhs);
 	TVec<T, N>	operator+ (TVec<T, N> const& rhs) const;
-
+	
 	T dot(TVec<T, N> const& other) const;
+	void normalize() const;
 protected:
 	T v[N];
 };
 
 #endif // _TVEC
 
+template class __declspec(dllexport) TVec<int, 2>;
+template class __declspec(dllexport) TVec<double, 2>;
+template class __declspec(dllexport) TVec<double, 3>;
+
 typedef TVec<int, 2>	baPoint2i;
 typedef TVec<double, 2> baPoint2d;
 typedef TVec<double, 3> baPoint3d;
+typedef TVec<double, 16> baMatrix44d;
+
+LIBBA_API inline libba::baPoint3d cross_p3(libba::baPoint3d a, libba::baPoint3d b) {
+	return { a[1] * b[2] - a[2] * b[1],a[2] * b[0] - a[0] * b[2],a[0] * b[1] - a[1] * b[0] };
+}
 
 class LIBBA_API BAImageInfo
 {
@@ -112,8 +124,15 @@ public:
 	public:
 		ReferenceFrame();
 		~ReferenceFrame() {}
+
 		baPoint3d tra;
-		TVec<double, 16> rot;
+		/*
+			0 1 2 3
+			4 5 6 7
+			8 9 10 11
+			12 13 14 15
+		*/
+		baMatrix44d rot;
 	};
 
 	typedef Camera			CameraIntr;
@@ -126,6 +145,11 @@ public:
 
 	baPoint2d convertWorldToImageCoordinates(const baPoint3d & pt_3d) const;	///< left top
 	baPoint3d convertImageToWorldCoordinates(const baPoint2d & pt_2d) const;
+
+	/*baPoint3d convertWGS84_ENU_to_LLA(const baPoint3d & enu_3d) const;
+	baPoint2d convertWGS84_LLA_to_UTM(const baPoint3d & lla) const;*/
+
+
 
 	/// @input: p, point in image coordinate
 	bool isInImage(const baPoint2d & p) const;
@@ -157,6 +181,8 @@ protected:
 	CameraExtr m_extrinsics;
 };
 
+
+
 //! image list, each line: image_path, width, height
 LIBBA_API bool loadImageList(const std::string & image_list, std::vector<BAImageInfo>& image_infos);
 
@@ -172,6 +198,11 @@ LIBBA_API bool loadBundleOutFile(const std::string & file_path, std::vector<BAIm
 //! load bundle.out + imagelist.txt
 LIBBA_API bool loadBundleOutFiles(const std::string & image_list, const std::string & sfm_out, std::vector<BAImageInfo> & image_infos);
 
+////////////////////////////   func for smart3d   /////////////////////////////////
+//! load xml, GET image_infos loaded from imagelist
+LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& image_infos);
 
 LIBBATOOLS_NAMESPACE_END
 #endif // !__LIB_BATOOLS_H__
+
+

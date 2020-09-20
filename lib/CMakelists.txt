@@ -3,6 +3,20 @@ Project(libBATools)
 file (GLOB HEADERS "*.h" "*.hpp")
 file (GLOB SOURCES "*.cpp")
 
+if (OPTION_SMART3D_SUPPORT)
+set(HEADERS ${HEADERS}
+ ${DEPEND_PATH}/tinyxml/tinystr.h
+ ${DEPEND_PATH}/tinyxml/tinyxml.h
+)
+set(SOURCES ${SOURCES}
+ ${DEPEND_PATH}/tinyxml/tinystr.cpp
+ ${DEPEND_PATH}/tinyxml/tinyxml.cpp
+ ${DEPEND_PATH}/tinyxml/tinyxmlerror.cpp
+ ${DEPEND_PATH}/tinyxml/tinyxmlparser.cpp
+)
+
+endif()
+
 set(SRCS_FILES ${HEADERS} ${SOURCES})
 
 if (USE_BATOOLS_AS_LIB)
@@ -10,6 +24,16 @@ if (USE_BATOOLS_AS_LIB)
 	set_property( TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS USE_BATOOLS_AS_LIB)
 else()
 	add_library (${PROJECT_NAME} SHARED	${SRCS_FILES})
+endif()
+
+if (OPTION_SMART3D_SUPPORT)
+	add_definitions(-DSMART3D_SUPPORT)
+	target_include_directories(${PROJECT_NAME} PUBLIC
+	${DEPEND_PATH}/tinyxml)
+endif()
+
+if (USE_VCGLIB)
+	add_definitions(-DUSE_VCGLIB)
 endif()
 
 #target_link_libraries(${PROJECT_NAME}	)

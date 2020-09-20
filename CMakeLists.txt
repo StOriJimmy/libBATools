@@ -40,7 +40,7 @@ set(LIBBATOOLS_VERSION
 # set path
 set(DEMO_PATH ${CMAKE_SOURCE_DIR}/demo)
 set(LIB_PATH ${CMAKE_SOURCE_DIR}/lib)
-set(DEPEND_PATH ${CMAKE_SOURCE_DIR}/utils)
+set(DEPEND_PATH ${CMAKE_SOURCE_DIR}/3rdparty)
 
 option(OPTION_BUILD_DEMO "build demo" ON)
 option(OPTION_USE_VCGLIB "use vcglib" OFF)

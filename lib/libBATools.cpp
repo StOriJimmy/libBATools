@@ -41,6 +41,40 @@ inline baMatrix44d mat_dot(baMatrix44d a, baMatrix44d b) {
 	return ret;
 }
 
+inline double round1(const double input)
+{
+	double result;
+	if (input > 1) result = 1;
+	else if (input < -1) result = -1;
+	else result = input;
+	return result;
+}
+
+const double RAD2DEG = M_PI / 180;
+const double DEG2RAD = 180 / M_PI;
+
+inline void R2POK2(const double R[9], double &phi, double &omega, double &kappa)
+{
+	omega = asin(-round1(R[5]));
+	phi = asin(-round1(R[2] / cos(omega)));
+	kappa = asin(round1(R[3] / cos(omega)));
+	double kappa2 = acos(round1(R[4] / cos(omega)));
+
+	phi *= RAD2DEG;
+	omega *= RAD2DEG;
+	kappa *= RAD2DEG;
+	kappa2 *= RAD2DEG;
+
+	//计算kappa角的范围，应该是-180~180
+	if (kappa2 < 90) { ; }
+	else if (kappa > 0) { kappa = kappa2; }
+	else { kappa = -kappa2; }
+
+	phi *= DEG2RAD;
+	omega *= DEG2RAD;
+	kappa *= DEG2RAD;
+}
+
 LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& image_infos)
 {
 #ifdef SMART3D_SUPPORT
@@ -64,7 +98,11 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 	//输出根元素名称
 
 	//cout << "根元素:" << RootElement->Value() << endl;
-
+#ifdef _EXCHANGE_RAD
+	char exchange_path[256];
+	sprintf(exchange_path, "%s_ex.xml", ccXmlName);
+	FILE* fp = fopen(exchange_path, "w");
+#endif
 	
 	for (TiXmlElement *child1 = RootElement->FirstChildElement(); child1; child1 = child1->NextSiblingElement())
 	{
@@ -202,10 +240,10 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 									}
 
 									//预定义中间变量存储读取的text文本内容
-									long double omega, phi, kappa, cam_x, cam_y, cam_z;
+									long double omega(0), phi(0), kappa(0), cam_x(0), cam_y(0), cam_z(0);
 									string imagepath;
-									int id;
-									double M_00, M_01, M_02, M_10, M_11, M_12, M_20, M_21, M_22;
+									int id(0);
+									double M_00(0), M_01(0), M_02(0), M_10(0), M_11(0), M_12(0), M_20(0), M_21(0), M_22(0);
 
 									bool rotation = false;
 
@@ -431,17 +469,34 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 										image_info.width() = width;
 										image_info.height() = height;
 										image_info.m_path = imagepath;
+										char ext[_MAX_EXT];
 										{
 											char drive[_MAX_DRIVE];
 											char dir[_MAX_DIR];
 											char name[_MAX_FNAME];
-											char ext[_MAX_EXT];
+											
 											_splitpath(imagepath.c_str(), drive, dir, name, ext);
 											image_info.m_name = name;
 										}
+
+										if (image_info.m_name == "DJI_0282") {
+											int test = 1;
+										}
+
+#ifdef _EXCHANGE_RAD
+										double R_[9];
+										R_[0] = rot[0]; R_[1] = rot[1]; R_[2] = rot[2];
+										R_[3] = rot[4]; R_[4] = rot[5]; R_[5] = rot[6];
+										R_[6] = rot[8]; R_[7] = rot[9]; R_[8] = rot[10];
+										double phi_, omega_, kappa_;
+										R2POK2(R_, phi_, omega_, kappa_);
+
+										fprintf(fp, "%s%s %lf %lf %lf %lf %lf %lf %lf\n", image_info.m_name.c_str(), ext,
+											0,
+											cam_x, cam_y, cam_z,
+											phi_, omega_, kappa_);
 									}
-
-
+#endif // _EXCHANGE_RAD
 									image_infos.push_back(image_info);
 								}							
 }
@@ -458,7 +513,11 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 			continue;
 		}
 	}
-	
+
+#ifdef _EXCHANGE_RAD
+	fclose(fp);
+#endif // _EXCHANGE_RAD
+
 	cout << "Succeed to load XML into vector image_infos" << endl;
 #else
 	std::cerr << "smart3d not supported" << std::endl;

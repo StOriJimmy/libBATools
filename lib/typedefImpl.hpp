@@ -58,7 +58,7 @@ inline TVec<T, N> TVec<T, N>::operator-() const { return (*this)*(-1); }
 
 template <typename T, int N>
 inline TVec<T, N>&
-TVec<T, N>::operator/= (T const& rhs) { std::for_each(v, v + N, [=](T & _v) {_v /= rhs; });	return *this; }
+TVec<T, N>::operator/= (T const& rhs) { std::for_each(v, v + N, [&](T & _v) {_v /= rhs; });	return *this; }
 
 template <typename T, int N>
 inline TVec<T, N>
@@ -66,7 +66,7 @@ TVec<T, N>::operator/ (T const& rhs) const { return TVec<T, N>(*this) /= rhs; }
 
 template <typename T, int N>
 inline TVec<T, N>&
-TVec<T, N>::operator*= (T const& rhs) { std::for_each(v, v + N, [=](T & _v) {_v *= rhs; });	return *this; }
+TVec<T, N>::operator*= (T const& rhs) { std::for_each(v, v + N, [&](T & _v) {_v *= rhs; });	return *this; }
 
 template <typename T, int N>
 inline TVec<T, N>
@@ -91,8 +91,5 @@ TVec<T, N>::operator+(TVec<T, N> const & rhs) const { return TVec<T, N>(*this) -
 template<typename T, int N>
 inline T
 TVec<T, N>::dot(TVec<T, N> const & other) const { return std::inner_product(v, v + N, *other, T(0)); }
-
-template<typename T, int N>
-inline void TVec<T, N>::normalize() const { T n = (*this).dot(*this); if (n > std::numeric_limits<T>::epsilon()) { TVec<T, N>(*this) /= n; } }
 
 LIBBATOOLS_NAMESPACE_END

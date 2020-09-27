@@ -301,12 +301,36 @@ int _tmain(int argc, _TCHAR* argv[])
 	for (int i = 0; i < image_data.size(); i++)
 	{
 		libba::BAImageInfo image_info = image_data[i];
-		if (image_data[i].m_name == "DJI_0271") {
-			libba::baPoint2d image_point = image_info.convertWorldToImageCoordinates(libba::baPoint3d(113.4892,-28.9156,44.1243));
+		if (image_data[i].m_name == "DJI_0282") {
+			libba::baPoint3d obj_center(-14.3886, 78.7521, 55.3733);
+
+			libba::baPoint2d image_point = image_info.convertWorldToImageCoordinates(obj_center);
 
 			if (image_info.isInImage(image_point)) {
-				std::cout << "point in image!" << std::endl;
+				std::cout << "point in image!" << image_point[0] << " " << image_point[1] << std::endl;
 			}
+
+			libba::baPoint3d cam_dir = image_info.getViewDir();
+			libba::baPoint3d cam_center = image_info.getViewPoint();
+
+			libba::baPoint3d view_point(-35.7712, 26.9136, 111.558);
+			libba::baPoint3d cam_to_obj = obj_center - cam_center;
+			cam_to_obj = cam_to_obj / sqrt(cam_to_obj.dot(cam_to_obj));
+
+			libba::baPoint3d obj_to_cam = -cam_to_obj;
+			libba::baPoint3d obj_to_view = view_point - obj_to_cam; 
+
+			obj_to_view = obj_to_view / sqrt(obj_to_view.dot(obj_to_view));
+
+			double obj_angle = obj_to_cam.dot(obj_to_view);
+			double cam_angle = cam_dir.dot(cam_to_obj);
+
+			double obj_angle1 = acos(obj_angle);
+			double cam_angle1 = acos(cam_angle);
+
+			double angle = obj_angle1 + cam_angle1;
+
+			int dddd = 1;
 		}
 	}
 

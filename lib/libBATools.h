@@ -73,7 +73,6 @@ public:
 	TVec<T, N>	operator+ (TVec<T, N> const& rhs) const;
 	
 	T dot(TVec<T, N> const& other) const;
-	void normalize() const;
 protected:
 	T v[N];
 };

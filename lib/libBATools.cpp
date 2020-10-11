@@ -25,6 +25,7 @@
 using namespace std;
 
 LIBBATOOLS_NAMESPACE_BEGIN
+#define _EXCHANGE_RAD
 
 inline baMatrix44d mat_dot(baMatrix44d a, baMatrix44d b) {
 	baMatrix44d ret;
@@ -50,10 +51,10 @@ inline double round1(const double input)
 	return result;
 }
 
-const double RAD2DEG = M_PI / 180;
-const double DEG2RAD = 180 / M_PI;
+const double RAD2DEG = 180 / M_PI;
+const double DEG2RAD = M_PI / 180;
 
-inline void R2POK2(const double R[9], double &phi, double &omega, double &kappa)
+LIBBA_API void R2POK2(const double R[9], double &phi, double &omega, double &kappa)
 {
 	omega = asin(-round1(R[5]));
 	phi = asin(-round1(R[2] / cos(omega)));
@@ -100,7 +101,7 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 	//cout << "根元素:" << RootElement->Value() << endl;
 #ifdef _EXCHANGE_RAD
 	char exchange_path[256];
-	sprintf(exchange_path, "%s_ex.xml", ccXmlName);
+	sprintf(exchange_path, "%s_ex.txt", ccXmlName);
 	FILE* fp = fopen(exchange_path, "w");
 #endif
 	

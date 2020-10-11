@@ -15,9 +15,9 @@
 using namespace std;
 
 
-#define TEST_SMART3D 1
+#define TEST_SMART3D 0
 #define TEST_IMAGE_RETRIEVAL 0
-
+#define TEST_HPR_CONVERT 1
 
 #ifdef USE_VCGLIB
 #include "vcg/space/intersection3.h"
@@ -297,6 +297,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		std::cerr << "failed to load image bundle files" << std::endl;
 		return EXIT_FAILURE;
 	}
+	return 1;
 	
 	for (int i = 0; i < image_data.size(); i++)
 	{
@@ -370,3 +371,44 @@ int _tmain(int argc, _TCHAR* argv[])
 }
 
 #endif // TEST_SMART3D
+
+#if TEST_HPR_CONVERT
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	std::cout << "THE FILE SHOULD ONLY CONTAINS H P R FOR EACH LINE!" << std::endl;
+	if (argc < 2) {
+		std::cerr << "please input the HPR path" << std::endl;
+		return 1;
+	}
+	FILE *fp = fopen(argv[1], "r");
+	char output_path[1024];
+	strcpy(output_path, argv[1]); strcat(output_path, "_ex.txt");
+	FILE* fp_out = fopen(output_path, "w");
+	char lbuf[1024];
+	while (fgets(lbuf, 1024, fp)) {
+		double heading, pitch, roll;
+		sscanf(lbuf, "%lf%lf%lf", &heading, &pitch, &roll);
+
+		double h = heading * M_PI / 180;
+		double p = pitch * M_PI / 180;
+		double r = roll * M_PI / 180;
+		double R[9];
+		R[0] = cos(p)*cos(r);
+		R[1] = -cos(h)*sin(r) + sin(h)*sin(p)*cos(r);
+		R[2] = sin(h)*sin(r) + cos(h)*sin(p)*cos(r);
+		R[3] = cos(p)*sin(r);
+		R[4] = cos(h) * cos(r) + sin(h)*sin(p)*sin(r);
+		R[5] = -sin(h)*cos(r) + cos(h)*sin(p)*sin(r);
+		R[6] = -sin(p);
+		R[7] = sin(h) * cos(p);
+		R[8] = cos(h)*cos(p);
+
+		double phi, omega, kappa;
+		libba::R2POK2(R, phi, omega, kappa);
+		fprintf(fp_out, "%lf %lf %lf\n", phi, omega, kappa);
+	}
+	return 0;
+}
+
+#endif

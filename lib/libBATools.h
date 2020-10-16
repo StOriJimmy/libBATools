@@ -197,8 +197,12 @@ LIBBA_API bool loadBundleOutFile(const std::string & file_path, std::vector<BAIm
 //! load bundle.out + imagelist.txt
 LIBBA_API bool loadBundleOutFiles(const std::string & image_list, const std::string & sfm_out, std::vector<BAImageInfo> & image_infos);
 
+LIBBA_API void R2POK2(const double R[9], double & phi, double & omega, double & kappa);
+
 ////////////////////////////   func for smart3d   /////////////////////////////////
 //! load xml, GET image_infos loaded from imagelist
+LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& image_infos);
+
 LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& image_infos);
 
 LIBBATOOLS_NAMESPACE_END

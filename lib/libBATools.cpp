@@ -11,7 +11,7 @@
 
 #include <string>
 #include <iomanip>
-
+#define SMART3D_SUPPORT
 #include <iostream>
 #ifdef SMART3D_SUPPORT
 #include "tinystr.h"
@@ -486,9 +486,9 @@ LIBBA_API bool loadSmart3dXML(const char * ccXmlName, std::vector<BAImageInfo>& 
 
 #ifdef _EXCHANGE_RAD
 										double R_[9];
-										R_[0] = rot[0]; R_[1] = rot[1]; R_[2] = rot[2];
-										R_[3] = rot[4]; R_[4] = rot[5]; R_[5] = rot[6];
-										R_[6] = rot[8]; R_[7] = rot[9]; R_[8] = rot[10];
+										R_[0] = rot[0]; R_[1] = rot[4]; R_[2] = rot[8];
+										R_[3] = rot[1]; R_[4] = rot[5]; R_[5] = rot[9];
+										R_[6] = rot[2]; R_[7] = rot[6]; R_[8] = rot[10];
 										double phi_, omega_, kappa_;
 										R2POK2(R_, phi_, omega_, kappa_);
 

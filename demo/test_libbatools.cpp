@@ -15,9 +15,9 @@
 using namespace std;
 
 
-#define TEST_SMART3D 0
+#define TEST_SMART3D 1
 #define TEST_IMAGE_RETRIEVAL 0
-#define TEST_HPR_CONVERT 1
+#define TEST_HPR_CONVERT 0
 
 #ifdef USE_VCGLIB
 #include "vcg/space/intersection3.h"
